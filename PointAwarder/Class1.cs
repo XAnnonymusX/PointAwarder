@@ -41,7 +41,6 @@ namespace PointAwarder {
         public override void Initialize() {
             //Commands.ChatCommands.Add(new Command("namevalidator.reload", FunctionPointer, "nvreload"));
             Commands.ChatCommands.Add(new Command("pedguinServer.award", award, "award"));
-            //TODO: add the command
         }
 
         private void award(CommandArgs args) {
