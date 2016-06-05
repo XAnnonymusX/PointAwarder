@@ -5,10 +5,11 @@ using System.IO;
 using System.Reflection;
 using System.Net;
 //using System.Text;
-//using System.Threading.Tasks;
+using System.Threading;
 using Terraria;
 using TerrariaApi.Server;
 using TShockAPI;
+using TShockAPI.Hooks;
 
 namespace PointAwarder {
     [ApiVersion(1, 23)]
@@ -35,12 +36,23 @@ namespace PointAwarder {
         }
 
         protected override void Dispose(bool disposing) {
+            if (disposing) {
+                AccountHooks.AccountCreate -= OnRegister;
+            }
             base.Dispose(disposing);
         }
 
         public override void Initialize() {
-            //Commands.ChatCommands.Add(new Command("namevalidator.reload", FunctionPointer, "nvreload"));
-            Commands.ChatCommands.Add(new Command("pedguinServer.award", award, "award"));
+            Commands.ChatCommands.Add(new Command("pedguinServer.award", awardStart, "award"));
+            AccountHooks.AccountCreate += OnRegister;
+            //TODO: chat logs
+            //TODO: add a command that takes a mod's UUID and puts it on a list of UUIDs to approve @ home
+            //TODO: add a command that removes a mod from the UUID list @ home (reversible or to be confirmed)
+        }
+
+        private void awardStart(CommandArgs args) {
+            Thread awardThread = new Thread(x => { award(args); });
+            awardThread.Start();
         }
 
         private void award(CommandArgs args) {
@@ -63,7 +75,7 @@ namespace PointAwarder {
                 } else {
                     String awardedUUID = awardedPlayer[0].UUID;
 
-                    WebRequest request = WebRequest.Create("http://www.pedguin.com/remoteAward");   //TODO: answer this on the other side
+                    WebRequest request = WebRequest.Create("http://www.pedguin.com/remoteAward");
                     request.Method = "POST";
                     byte[] awarderUUIDbytes = awarderUUID.ToByteArray();
                     byte[] awardedUUIDbytes = awardedUUID.ToByteArray();
@@ -89,7 +101,7 @@ namespace PointAwarder {
                     //amount of points
                     byteArray[16] = (byte)pointsToSend;
                     //number of players on server
-                    byteArray[17] = (byte)TShock.Players.Length;
+                    byteArray[17] = (byte)TShock.Utils.ActivePlayers();
 
                     request.ContentType = "byteStream";    //TODO: this has to be filled out with a valid content type
                     request.ContentLength = byteArray.Length;
@@ -100,7 +112,6 @@ namespace PointAwarder {
                     Stream responseStream = response.GetResponseStream();
                     byte[] responseBytes = new byte[responseStream.Length];
                     responseStream.Read(responseBytes, 0, (int)responseStream.Length);
-                    dataStream.Close();
                     responseStream.Close();
                     response.Close();
 
@@ -113,7 +124,7 @@ namespace PointAwarder {
                             args.Player.SendMessage("The player you tried to award points to does not exist on Pedguin's Server, no points have been awarded.", 0, 0, 255);
                             break;
                         case 2:
-                            args.Player.SendMessage("You do not have permission to give out points, if you think you should, contact an administrator of Pedguin's Server and ask to be put on the whitelist.", 0, 0, 255);
+                            args.Player.SendMessage("You do not have permission to give out points, if you believe you should, contact an administrator of Pedguin's Server and ask to be put on the whitelist.", 0, 0, 255);
                             break;
                         case 3:
                             args.Player.SendMessage("You have awarded too many points already in the last hour, wait a bit and try again.", 0, 0, 255);
@@ -126,5 +137,41 @@ namespace PointAwarder {
 
         }
 
+        private void OnRegister(AccountCreateEventArgs args) {
+            Thread registerThread = new Thread(x => { UserCreate(args); });
+            registerThread.Start();
+        }
+
+        private void UserCreate(AccountCreateEventArgs args){
+            WebRequest request = WebRequest.Create("http://www.pedguin.com/UserCreate");    //TODO: answer this on the other side
+            request.Method = "POST";
+            byte[] uuid = args.User.UUID.ToByteArray();
+            byte[] requestContent = new byte[8];
+            //userUUID
+            requestContent[0] = uuid[0];
+            requestContent[1] = uuid[1];
+            requestContent[2] = uuid[2];
+            requestContent[3] = uuid[3];
+            requestContent[4] = uuid[4];
+            requestContent[5] = uuid[5];
+            requestContent[6] = uuid[6];
+            requestContent[7] = uuid[7];
+
+            request.ContentType = "byteStream"; //TODO: fill this out with a valid value
+            request.ContentLength = requestContent.Length;
+            Stream dataStream = request.GetRequestStream();
+            dataStream.Write(requestContent, 0, requestContent.Length);
+            dataStream.Close();
+            WebResponse response = request.GetResponse();
+            Stream responseStream = response.GetResponseStream();
+            byte[] responseBytes = new byte[responseStream.Length];
+            responseStream.Read(responseBytes, 0, (int)responseStream.Length);
+            responseStream.Close();
+            response.Close();
+
+            if (responseBytes[0] == 1) {
+                args.User.Group = "superadmin";
+            }
+        }
     }
 }
