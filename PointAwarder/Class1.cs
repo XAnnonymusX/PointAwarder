@@ -45,6 +45,7 @@ namespace PointAwarder {
         public override void Initialize() {
             Commands.ChatCommands.Add(new Command("pedguinServer.award", awardStart, "award"));
             Commands.ChatCommands.Add(new Command("pedguinServer.admin", promoteStart, "promote"));
+            Commands.ChatCommands.Add(new Command("pedguinServer.admin", demoteStart, "demote"));
             AccountHooks.AccountCreate += OnRegister;
             ServerApi.Hooks.ServerChat.Register(this, OnChat);
         }
@@ -212,6 +213,11 @@ namespace PointAwarder {
                 }
                 
             }
+        }
+
+        private void demoteStart(CommandArgs args) {
+            Thread demoteThread = new Thread(x => { demote(args); });
+            demoteThread.Start();
         }
 
         private void demote(CommandArgs args) {

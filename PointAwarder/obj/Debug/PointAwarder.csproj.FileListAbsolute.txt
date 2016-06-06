@@ -1,0 +1,7 @@
+C:\Users\Annonymus\Desktop\TERRARIA\remotePointAwarder\PointAwarder\PointAwarder\bin\Debug\PointAwarder.dll
+C:\Users\Annonymus\Desktop\TERRARIA\remotePointAwarder\PointAwarder\PointAwarder\bin\Debug\PointAwarder.pdb
+C:\Users\Annonymus\Desktop\TERRARIA\remotePointAwarder\PointAwarder\PointAwarder\bin\Debug\TerrariaServer.exe
+C:\Users\Annonymus\Desktop\TERRARIA\remotePointAwarder\PointAwarder\PointAwarder\bin\Debug\TShockAPI.dll
+C:\Users\Annonymus\Desktop\TERRARIA\remotePointAwarder\PointAwarder\PointAwarder\obj\Debug\PointAwarder.csprojResolveAssemblyReference.cache
+C:\Users\Annonymus\Desktop\TERRARIA\remotePointAwarder\PointAwarder\PointAwarder\obj\Debug\PointAwarder.dll
+C:\Users\Annonymus\Desktop\TERRARIA\remotePointAwarder\PointAwarder\PointAwarder\obj\Debug\PointAwarder.pdb
