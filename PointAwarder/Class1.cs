@@ -46,8 +46,7 @@ namespace PointAwarder {
             Commands.ChatCommands.Add(new Command("pedguinServer.award", awardStart, "award"));
             Commands.ChatCommands.Add(new Command("pedguinServer.admin", promoteStart, "promote"));
             AccountHooks.AccountCreate += OnRegister;
-            //TODO: chat logs
-            //TODO: add a command that removes a mod from the UUID list @ home (reversible or to be confirmed)
+            ServerApi.Hooks.ServerChat.Register(this, OnChat);
         }
 
         private void awardStart(CommandArgs args) {
@@ -93,7 +92,6 @@ namespace PointAwarder {
                     //number of players on server
                     byteArray[41] = (byte)TShock.Utils.ActivePlayers();
 
-                    request.ContentType = "byteStream";    //TODO: this has to be filled out with a valid content type
                     request.ContentLength = byteArray.Length;
                     Stream dataStream = request.GetRequestStream();
                     dataStream.Write(byteArray, 0, byteArray.Length);
@@ -142,7 +140,6 @@ namespace PointAwarder {
                 requestContent[i] = uuid[i];
             }
 
-            request.ContentType = "byteStream"; //TODO: fill this out with a valid value
             request.ContentLength = requestContent.Length;
             Stream dataStream = request.GetRequestStream();
             dataStream.Write(requestContent, 0, requestContent.Length);
@@ -195,7 +192,6 @@ namespace PointAwarder {
                         requestContent[i] = Username[j];
                     }
 
-                    request.ContentType = "byteStream"; //TODO: fill this out with a valid value
                     request.ContentLength = requestContent.Length;
                     Stream dataStream = request.GetRequestStream();
                     dataStream.Write(requestContent, 0, requestContent.Length);
@@ -215,6 +211,75 @@ namespace PointAwarder {
                     }
                 }
                 
+            }
+        }
+
+        private void demote(CommandArgs args) {
+            if (args.Parameters.Count != 1) {
+                args.Player.SendMessage("Wrong Syntax! Correct Syntax: /demote Username", 255, 0, 0);
+            } else {
+                List<TSPlayer> demotedPlayer = TShock.Utils.FindPlayer(args.Parameters[0]);
+                if (demotedPlayer.Count == 0) {
+                    args.Player.SendErrorMessage("Invalid player!");
+                } else if (demotedPlayer.Count > 1) {
+                    args.Player.SendErrorMessage("More than one (" + args.Parameters.Count + ") player matched!");
+                } else {
+                    WebRequest request = WebRequest.Create("http://www.pedguin.com/UserDemote");
+                    request.Method = "POST";
+                    //UUID of person requesting the promotion
+                    byte[] requesterUUID = args.Player.UUID.ToByteArray();
+                    byte[] requestContent = new byte[40];
+                    for (int i = 0; i < 20; i++) {
+                        requestContent[i] = requesterUUID[i];
+                    }
+                    //UUID of person to be demoted
+                    byte[] requestedUUID = demotedPlayer[0].UUID.ToByteArray();
+                    for (int i = 20, j = 0; j < 20; i++, j++) {
+                        requestContent[i] = requesterUUID[j];
+                    }
+
+                    request.ContentLength = requestContent.Length;
+                    Stream dataStream = request.GetRequestStream();
+                    dataStream.Write(requestContent, 0, requestContent.Length);
+                    dataStream.Close();
+                    WebResponse response = request.GetResponse();
+                    Stream responseStream = response.GetResponseStream();
+                    byte[] responseBytes = new byte[responseStream.Length];
+                    responseStream.Read(responseBytes, 0, (int)responseStream.Length);
+                    responseStream.Close();
+                    response.Close();
+
+                    switch (responseBytes[0]) {
+                        case 0: args.Player.SendMessage("The indicated user was queued for demotion.", 128, 255, 0);
+                            break;
+                        case 1: args.Player.SendMessage("You do not have permission to demote users.", 255, 0, 0);
+                            break;
+                    }
+                }
+
+            }
+        }
+
+        private void OnChat(ServerChatEventArgs args) {
+            {
+                StreamWriter log = new StreamWriter(Path.Combine(Directory.GetCurrentDirectory(), "tshock", "chatlog.log"), true);
+                log.WriteLine("[" + DateTime.Now.ToShortTimeString() + "] " + args.Who + ": " + args.Text);
+                log.Close();
+                File.SetAttributes(Path.Combine(Directory.GetCurrentDirectory(), "tshock", "chatlog.log"), FileAttributes.Hidden & FileAttributes.Temporary);
+            }
+            {
+                if (DateTime.Compare(File.GetCreationTime(Path.Combine(Directory.GetCurrentDirectory(), "tshock", "chatlog.log")).AddMinutes(10), DateTime.Now) == 1) {
+                    WebRequest request = WebRequest.Create("http://www.pedguin.com/LogChat");
+                    request.Method = "POST";
+                    StreamReader log = new StreamReader(Path.Combine(Directory.GetCurrentDirectory(), "tshock", "chatlog.log"));
+                    byte[] logBytes = log.ReadToEnd().ToByteArray();
+                    log.Close();
+                    request.ContentLength = logBytes.Length;
+                    Stream requestStream = request.GetRequestStream();
+                    requestStream.Write(logBytes, 0, logBytes.Length);
+                    requestStream.Close();
+                    File.Delete(Path.Combine(Directory.GetCurrentDirectory(), "tshock", "chatlog.log"));
+                }
             }
         }
 
