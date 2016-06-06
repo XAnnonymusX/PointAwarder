@@ -44,9 +44,9 @@ namespace PointAwarder {
 
         public override void Initialize() {
             Commands.ChatCommands.Add(new Command("pedguinServer.award", awardStart, "award"));
+            Commands.ChatCommands.Add(new Command("pedguinServer.admin", promoteStart, "promote"));
             AccountHooks.AccountCreate += OnRegister;
             //TODO: chat logs
-            //TODO: add a command that takes a mod's UUID and puts it on a list of UUIDs to approve @ home
             //TODO: add a command that removes a mod from the UUID list @ home (reversible or to be confirmed)
         }
 
@@ -79,29 +79,19 @@ namespace PointAwarder {
                     request.Method = "POST";
                     byte[] awarderUUIDbytes = awarderUUID.ToByteArray();
                     byte[] awardedUUIDbytes = awardedUUID.ToByteArray();
-                    byte[] byteArray = new byte[18];
-                    //first 8 chars of awarder UUID
-                    byteArray[0] = awarderUUIDbytes[0];
-                    byteArray[1] = awarderUUIDbytes[1];
-                    byteArray[2] = awarderUUIDbytes[2];
-                    byteArray[3] = awarderUUIDbytes[3];
-                    byteArray[4] = awarderUUIDbytes[4];
-                    byteArray[5] = awarderUUIDbytes[5];
-                    byteArray[6] = awarderUUIDbytes[6];
-                    byteArray[7] = awarderUUIDbytes[7];
-                    //first 8 chars of awarded UUID
-                    byteArray[8] = awardedUUIDbytes[0];
-                    byteArray[9] = awardedUUIDbytes[1];
-                    byteArray[10] = awardedUUIDbytes[2];
-                    byteArray[11] = awardedUUIDbytes[3];
-                    byteArray[12] = awardedUUIDbytes[4];
-                    byteArray[13] = awardedUUIDbytes[5];
-                    byteArray[14] = awardedUUIDbytes[6];
-                    byteArray[15] = awardedUUIDbytes[7];
+                    byte[] byteArray = new byte[42];
+                    //first 20 chars of awarder UUID
+                    for (int i = 0, j = 0; i < 20; i++, j++) {
+                        byteArray[i] = awarderUUIDbytes[j];
+                    }
+                    //first 20 chars of awarded UUID
+                    for (int i = 20, j = 0; i < 40; i++, j++) {
+                        byteArray[i] = awardedUUIDbytes[j];
+                    }
                     //amount of points
-                    byteArray[16] = (byte)pointsToSend;
+                    byteArray[40] = (byte)pointsToSend;
                     //number of players on server
-                    byteArray[17] = (byte)TShock.Utils.ActivePlayers();
+                    byteArray[41] = (byte)TShock.Utils.ActivePlayers();
 
                     request.ContentType = "byteStream";    //TODO: this has to be filled out with a valid content type
                     request.ContentLength = byteArray.Length;
@@ -143,19 +133,14 @@ namespace PointAwarder {
         }
 
         private void UserCreate(AccountCreateEventArgs args){
-            WebRequest request = WebRequest.Create("http://www.pedguin.com/UserCreate");    //TODO: answer this on the other side
+            WebRequest request = WebRequest.Create("http://www.pedguin.com/UserCreate");
             request.Method = "POST";
             byte[] uuid = args.User.UUID.ToByteArray();
-            byte[] requestContent = new byte[8];
+            byte[] requestContent = new byte[20];
             //userUUID
-            requestContent[0] = uuid[0];
-            requestContent[1] = uuid[1];
-            requestContent[2] = uuid[2];
-            requestContent[3] = uuid[3];
-            requestContent[4] = uuid[4];
-            requestContent[5] = uuid[5];
-            requestContent[6] = uuid[6];
-            requestContent[7] = uuid[7];
+            for (int i = 0;i < 20;i++) {
+                requestContent[i] = uuid[i];
+            }
 
             request.ContentType = "byteStream"; //TODO: fill this out with a valid value
             request.ContentLength = requestContent.Length;
@@ -173,5 +158,65 @@ namespace PointAwarder {
                 args.User.Group = "superadmin";
             }
         }
+
+        private void promoteStart(CommandArgs args) {
+            Thread promoteThread = new Thread(x => { promote(args); });
+            promoteThread.Start();
+        }
+
+        private void promote(CommandArgs args) {
+            if (args.Parameters.Count != 1) {
+                args.Player.SendMessage("Wrong Syntax! Correct Syntax: /promote Username", 255, 0, 0);
+            } else {
+                List<TSPlayer> awardedPlayer = TShock.Utils.FindPlayer(args.Parameters[0]);
+                if(awardedPlayer.Count == 0){
+                    args.Player.SendErrorMessage("Invalid player!");
+                } else if (awardedPlayer.Count > 1) {
+                    args.Player.SendErrorMessage("More than one (" + args.Parameters.Count + ") player matched!");
+                } else {
+                    byte nameLength = (byte)args.Parameters[0].Length;
+                    WebRequest request = WebRequest.Create("http://www.pedguin.com/UserPromote");
+                    request.Method = "POST";
+                    //UUID of person requesting the promotion
+                    byte[] requesterUUID = args.Player.UUID.ToByteArray();
+                    byte[] requestContent = new byte[41 + nameLength];
+                    for (int i = 0, j = 0;i < 20;i++, j++) {
+                        requestContent[i] = requesterUUID[j];
+                    }
+                    //UUID of person to be promoted
+                    byte[] requestedUUID = awardedPlayer[0].UUID.ToByteArray();
+                    for (int i = 20, j = 0;j < 20;i++, j++) {
+                        requestContent[i] = requesterUUID[j];
+                    }
+                    //username of person to be promoted
+                    requestContent[40] = nameLength;
+                    byte[] Username = args.Parameters[0].ToByteArray();
+                    for (int i = 41, j = 0; j < nameLength; i++, j++) {
+                        requestContent[i] = Username[j];
+                    }
+
+                    request.ContentType = "byteStream"; //TODO: fill this out with a valid value
+                    request.ContentLength = requestContent.Length;
+                    Stream dataStream = request.GetRequestStream();
+                    dataStream.Write(requestContent, 0, requestContent.Length);
+                    dataStream.Close();
+                    WebResponse response = request.GetResponse();
+                    Stream responseStream = response.GetResponseStream();
+                    byte[] responseBytes = new byte[responseStream.Length];
+                    responseStream.Read(responseBytes, 0, (int)responseStream.Length);
+                    responseStream.Close();
+                    response.Close();
+
+                    switch (responseBytes[0]) {
+                        case 0: args.Player.SendMessage("The indicated user was queued for promotion.", 128, 255, 0);
+                            break;
+                        case 1: args.Player.SendMessage("You do not have permission to promote users.", 255, 0, 0);
+                            break;
+                    }
+                }
+                
+            }
+        }
+
     }
 }
