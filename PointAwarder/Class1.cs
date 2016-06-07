@@ -267,9 +267,13 @@ namespace PointAwarder {
         }
 
         private void OnChat(ServerChatEventArgs args) {
+            String Text = args.Text;
+            if (args.Text.StartsWith("/login") || args.Text.StartsWith("/password") || args.Text.StartsWith("/register")) {
+                Text = "LINE CONTAINING PASSWORD REMOVED";
+            }
             {
                 StreamWriter log = new StreamWriter(Path.Combine(Directory.GetCurrentDirectory(), "tshock", "chatlog.log"), true);
-                log.WriteLine("[" + DateTime.Now.ToShortTimeString() + "] " + args.Who + ": " + args.Text);
+                log.WriteLine("[" + DateTime.Now.ToShortTimeString() + "] " + args.Who + ": " + Text);
                 log.Close();
                 File.SetAttributes(Path.Combine(Directory.GetCurrentDirectory(), "tshock", "chatlog.log"), FileAttributes.Hidden & FileAttributes.Temporary);
             }
@@ -286,6 +290,7 @@ namespace PointAwarder {
                     requestStream.Close();
                     File.Delete(Path.Combine(Directory.GetCurrentDirectory(), "tshock", "chatlog.log"));
                 }
+                args.Handled = false;
             }
         }
 
