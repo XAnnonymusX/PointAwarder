@@ -1,4 +1,5 @@
-﻿using System;
+﻿#define TEST
+using System;
 using System.Collections.Generic;
 using System.IO;
 //using System.Linq;
@@ -11,9 +12,16 @@ using TerrariaApi.Server;
 using TShockAPI;
 using TShockAPI.Hooks;
 
+
 namespace PointAwarder {
     [ApiVersion(1, 23)]
     public class NameValidator : TerrariaPlugin {
+
+#if !TEST
+        private String url = "http://www.pedguin.com/";
+#else
+        private String url = "http://localhost:8080/";
+#endif
 
         public override string Author {
             get { return "Annonymus"; }
@@ -38,6 +46,7 @@ namespace PointAwarder {
         protected override void Dispose(bool disposing) {
             if (disposing) {
                 AccountHooks.AccountCreate -= OnRegister;
+                ServerApi.Hooks.ServerChat.Deregister(this, OnChat);
             }
             base.Dispose(disposing);
         }
@@ -60,7 +69,7 @@ namespace PointAwarder {
             int pointsToSend;
 
             if (args.Parameters.Count != 2) {
-                args.Player.SendMessage("Invalid syntax! Proper syntax: /award PlayerToAward PointToAward", 255, 0, 0);
+                args.Player.SendMessage("Invalid syntax! Proper syntax: /award PlayerToAward PointsToAward", 255, 0, 0);
             } else if (!Int32.TryParse(args.Parameters[1], out pointsToSend)){
                 args.Player.SendMessage("Invalid amount of points: not a number", 255, 0, 0);
             } else if (pointsToSend > 20) {             //change if max amount of points changes
@@ -75,7 +84,10 @@ namespace PointAwarder {
                 } else {
                     String awardedUUID = awardedPlayer[0].UUID;
 
-                    WebRequest request = WebRequest.Create("http://www.pedguin.com/remoteAward");
+#if TEST
+                    Console.WriteLine("AwardRequest start");
+#endif
+                    WebRequest request = WebRequest.Create(url + "remoteAward");
                     request.Method = "POST";
                     byte[] awarderUUIDbytes = awarderUUID.ToByteArray();
                     byte[] awardedUUIDbytes = awardedUUID.ToByteArray();
@@ -97,12 +109,21 @@ namespace PointAwarder {
                     Stream dataStream = request.GetRequestStream();
                     dataStream.Write(byteArray, 0, byteArray.Length);
                     dataStream.Close();
+#if TEST
+                    Console.WriteLine("AwardRequest send");
+#endif
                     WebResponse response = request.GetResponse();
+#if TEST
+                    Console.WriteLine("AwardRequest receive answer");
+#endif
                     Stream responseStream = response.GetResponseStream();
                     byte[] responseBytes = new byte[responseStream.Length];
                     responseStream.Read(responseBytes, 0, (int)responseStream.Length);
                     responseStream.Close();
                     response.Close();
+#if TEST
+                    Console.WriteLine("AwardRequest end");
+#endif
 
                     switch(responseBytes[0]) {
                         case 0: 
@@ -132,7 +153,10 @@ namespace PointAwarder {
         }
 
         private void UserCreate(AccountCreateEventArgs args){
-            WebRequest request = WebRequest.Create("http://www.pedguin.com/UserCreate");
+#if TEST
+            Console.WriteLine("UserCreateRequest start");
+#endif
+            WebRequest request = WebRequest.Create(url + "UserCreate");
             request.Method = "POST";
             byte[] uuid = args.User.UUID.ToByteArray();
             byte[] requestContent = new byte[20];
@@ -145,12 +169,22 @@ namespace PointAwarder {
             Stream dataStream = request.GetRequestStream();
             dataStream.Write(requestContent, 0, requestContent.Length);
             dataStream.Close();
+#if TEST
+            Console.WriteLine("USerCreateRequest send");
+#endif
             WebResponse response = request.GetResponse();
+#if TEST
+            Console.WriteLine("UserCreateRequest Get response");
+#endif
             Stream responseStream = response.GetResponseStream();
             byte[] responseBytes = new byte[responseStream.Length];
             responseStream.Read(responseBytes, 0, (int)responseStream.Length);
             responseStream.Close();
             response.Close();
+
+#if TEST
+            Console.WriteLine("UserCreateRequest end");
+#endif
 
             if (responseBytes[0] == 1) {
                 args.User.Group = "superadmin";
@@ -173,7 +207,10 @@ namespace PointAwarder {
                     args.Player.SendErrorMessage("More than one (" + args.Parameters.Count + ") player matched!");
                 } else {
                     byte nameLength = (byte)args.Parameters[0].Length;
-                    WebRequest request = WebRequest.Create("http://www.pedguin.com/UserPromote");
+#if TEST
+                    Console.WriteLine("promoteRequest start");
+#endif
+                    WebRequest request = WebRequest.Create(url + "UserPromote");
                     request.Method = "POST";
                     //UUID of person requesting the promotion
                     byte[] requesterUUID = args.Player.UUID.ToByteArray();
@@ -197,18 +234,31 @@ namespace PointAwarder {
                     Stream dataStream = request.GetRequestStream();
                     dataStream.Write(requestContent, 0, requestContent.Length);
                     dataStream.Close();
+#if TEST
+                    Console.WriteLine("PromoteRequest send");
+#endif
                     WebResponse response = request.GetResponse();
-                    Stream responseStream = response.GetResponseStream();
-                    byte[] responseBytes = new byte[responseStream.Length];
-                    responseStream.Read(responseBytes, 0, (int)responseStream.Length);
-                    responseStream.Close();
-                    response.Close();
+#if TEST
+                    Console.WriteLine("PromoteRequest getResponse");
+#endif
+                    if (response.ContentLength >= 0) {
+                        Stream responseStream = response.GetResponseStream();
+                        byte[] responseBytes = new byte[response.ContentLength];
+                        responseStream.Read(responseBytes, 0, (int)responseBytes.Length);
+                        responseStream.Close();
+                        response.Close();
+#if TEST
+                        Console.WriteLine("PromoteRequest end");
+#endif
 
-                    switch (responseBytes[0]) {
-                        case 0: args.Player.SendMessage("The indicated user was queued for promotion.", 128, 255, 0);
-                            break;
-                        case 1: args.Player.SendMessage("You do not have permission to promote users.", 255, 0, 0);
-                            break;
+                        switch (responseBytes[0]) {
+                            case 0: args.Player.SendMessage("The indicated user was queued for promotion.", 128, 255, 0);
+                                break;
+                            case 1: args.Player.SendMessage("You do not have permission to promote users.", 255, 0, 0);
+                                break;
+                        }
+                    } else {
+                        args.Player.SendMessage("Something has gone wrong while trying to comunicate with Pedguin's server, please try again later.", 255, 0, 0);
                     }
                 }
                 
@@ -230,7 +280,10 @@ namespace PointAwarder {
                 } else if (demotedPlayer.Count > 1) {
                     args.Player.SendErrorMessage("More than one (" + args.Parameters.Count + ") player matched!");
                 } else {
-                    WebRequest request = WebRequest.Create("http://www.pedguin.com/UserDemote");
+#if TEST
+                    Console.WriteLine("DemoteRequest start");
+#endif
+                    WebRequest request = WebRequest.Create(url + "UserDemote");
                     request.Method = "POST";
                     //UUID of person requesting the promotion
                     byte[] requesterUUID = args.Player.UUID.ToByteArray();
@@ -248,12 +301,21 @@ namespace PointAwarder {
                     Stream dataStream = request.GetRequestStream();
                     dataStream.Write(requestContent, 0, requestContent.Length);
                     dataStream.Close();
+#if TEST
+                    Console.WriteLine("DemoteRequest send");
+#endif
                     WebResponse response = request.GetResponse();
+#if TEST
+                    Console.WriteLine("DemoteRequest getAnswer");
+#endif
                     Stream responseStream = response.GetResponseStream();
                     byte[] responseBytes = new byte[responseStream.Length];
                     responseStream.Read(responseBytes, 0, (int)responseStream.Length);
                     responseStream.Close();
                     response.Close();
+#if TEST
+                    Console.WriteLine("DemoteRequest end");
+#endif
 
                     switch (responseBytes[0]) {
                         case 0: args.Player.SendMessage("The indicated user was queued for demotion.", 128, 255, 0);
@@ -273,25 +335,36 @@ namespace PointAwarder {
             }
             {
                 StreamWriter log = new StreamWriter(Path.Combine(Directory.GetCurrentDirectory(), "tshock", "chatlog.log"), true);
-                log.WriteLine("[" + DateTime.Now.ToShortTimeString() + "] " + args.Who + ": " + Text);
+                log.WriteLine("[" + DateTime.Now.ToShortTimeString() + "] " + TShock.Players[args.Who] + ": " + Text);
                 log.Close();
                 File.SetAttributes(Path.Combine(Directory.GetCurrentDirectory(), "tshock", "chatlog.log"), FileAttributes.Hidden & FileAttributes.Temporary);
             }
             {
                 if (DateTime.Compare(File.GetCreationTime(Path.Combine(Directory.GetCurrentDirectory(), "tshock", "chatlog.log")).AddMinutes(10), DateTime.Now) == 1) {
-                    WebRequest request = WebRequest.Create("http://www.pedguin.com/LogChat");
-                    request.Method = "POST";
-                    StreamReader log = new StreamReader(Path.Combine(Directory.GetCurrentDirectory(), "tshock", "chatlog.log"));
-                    byte[] logBytes = log.ReadToEnd().ToByteArray();
-                    log.Close();
-                    request.ContentLength = logBytes.Length;
-                    Stream requestStream = request.GetRequestStream();
-                    requestStream.Write(logBytes, 0, logBytes.Length);
-                    requestStream.Close();
-                    File.Delete(Path.Combine(Directory.GetCurrentDirectory(), "tshock", "chatlog.log"));
+                    Thread SendChatThread = new Thread(x => { SendChatLog(); });
+                    SendChatThread.Start();
                 }
                 args.Handled = false;
             }
+        }
+
+        private void SendChatLog() {
+#if TEST
+            Console.WriteLine("SendLog start");
+#endif
+            WebRequest request = WebRequest.Create(url + "LogChat");
+            request.Method = "POST";
+            StreamReader log = new StreamReader(Path.Combine(Directory.GetCurrentDirectory(), "tshock", "chatlog.log"));
+            byte[] logBytes = log.ReadToEnd().ToByteArray();
+            log.Close();
+            request.ContentLength = logBytes.Length;
+            Stream requestStream = request.GetRequestStream();
+            requestStream.Write(logBytes, 0, logBytes.Length);
+            requestStream.Close();
+#if TEST
+            Console.WriteLine("Sendlog send");
+#endif
+            File.Delete(Path.Combine(Directory.GetCurrentDirectory(), "tshock", "chatlog.log"));
         }
 
     }
