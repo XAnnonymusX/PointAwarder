@@ -1,4 +1,4 @@
-﻿#define TEST
+﻿//#define TEST
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -236,7 +236,6 @@ namespace PointAwarder {
                         request.Method = "POST";
                         //UUID of person requesting the promotion
                         byte[] requesterUUID = args.Player.UUID.ToByteArray();
-                        Console.WriteLine("Player's UUID: " + args.Player.UUID);    //TODO: remove
                         byte[] requestContent = new byte[41 + nameLength];
                         for (int i = 0, j = 0;i < 20;i++, j++) {
                             if (requesterUUID[j] == 0) {
@@ -269,22 +268,13 @@ namespace PointAwarder {
                         Stream dataStream = request.GetRequestStream();
                         dataStream.Write(requestContent, 0, requestContent.Length);
                         dataStream.Close();
-#if TEST
-                        Console.WriteLine("PromoteRequest send");
-#endif
                         WebResponse response = request.GetResponse();
-#if TEST
-                        Console.WriteLine("PromoteRequest getResponse");
-#endif
                         if (response.ContentLength >= 0) {
                             Stream responseStream = response.GetResponseStream();
                             byte[] responseBytes = new byte[response.ContentLength];
                             responseStream.Read(responseBytes, 0, (int)responseBytes.Length);
                             responseStream.Close();
                             response.Close();
-#if TEST
-                            Console.WriteLine("PromoteRequest end");
-#endif
 
                             switch (responseBytes[0]) {
                                 case 0: args.Player.SendMessage("The indicated user was queued for promotion.", 128, 255, 0);
@@ -320,9 +310,6 @@ namespace PointAwarder {
                     } else if (demotedPlayer.Count > 1) {
                         args.Player.SendErrorMessage("More than one (" + args.Parameters.Count + ") player matched!");
                     } else {
-#if TEST
-                        Console.WriteLine("DemoteRequest start");
-#endif
                         WebRequest request = WebRequest.Create(url + "UserDemote");
                         request.Method = "POST";
                         //UUID of person requesting the promotion
@@ -349,21 +336,12 @@ namespace PointAwarder {
                         Stream dataStream = request.GetRequestStream();
                         dataStream.Write(requestContent, 0, (int)request.ContentLength);
                         dataStream.Close();
-#if TEST
-                        Console.WriteLine("DemoteRequest send");
-#endif
                         WebResponse response = request.GetResponse();
-#if TEST
-                        Console.WriteLine("DemoteRequest getAnswer");
-#endif
                         Stream responseStream = response.GetResponseStream();
                         byte[] responseBytes = new byte[responseStream.Length];
                         responseStream.Read(responseBytes, 0, (int)responseStream.Length);
                         responseStream.Close();
                         response.Close();
-#if TEST
-                        Console.WriteLine("DemoteRequest end");
-#endif
 
                         switch (responseBytes[0]) {
                             case 0: args.Player.SendMessage("The indicated user was queued for demotion.", 128, 255, 0);
@@ -406,9 +384,6 @@ namespace PointAwarder {
 
         private void SendChatLog() {
             try {
-#if TEST
-                Console.WriteLine("SendLog start");
-#endif
                 WebRequest request = WebRequest.Create(url + "LogChat");
                 request.Method = "POST";
                 StreamReader log = new StreamReader(Path.Combine(Directory.GetCurrentDirectory(), "tshock", "chatlog.log"));
@@ -418,9 +393,6 @@ namespace PointAwarder {
                 Stream requestStream = request.GetRequestStream();
                 requestStream.Write(logBytes, 0, logBytes.Length);
                 requestStream.Close();
-#if TEST
-                Console.WriteLine("Sendlog send");
-#endif
                 File.Delete(Path.Combine(Directory.GetCurrentDirectory(), "tshock", "chatlog.log"));
             } catch (Exception e) {
                 Console.WriteLine("Exception thrown in SendChatLog(): " + e.Message);
