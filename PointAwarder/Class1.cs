@@ -140,6 +140,7 @@ namespace PointAwarder {
                                 break;
                             case 1:
                                 args.Player.SendMessage("The player you tried to award points to does not exist on Pedguin's Server. No points have been awarded.", 0, 0, 255);
+                                awardedPlayer[0].SendMessage("You would have been awarded " + pointsToSend + " points on Pedguin's Minigame Server, but you don't have an account. Join at pedguin.com today!", 255, 128, 0);
                                 break;
                             case 2:
                                 args.Player.SendMessage("You do not have permission to give out points, if you believe you should, contact an administrator of Pedguin's Server and ask to be put on the whitelist.", 0, 0, 255);
