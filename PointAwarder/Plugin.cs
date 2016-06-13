@@ -16,7 +16,7 @@ namespace PointAwarder {
     public class PointAwarder : TerrariaPlugin {
 
 #if !TEST
-        private String url = "http://www.pedguin.com/";
+        private String url = "http://www.pedguin.com:80/";
 #else
         private String url = "http://www.pedguin.com:8080/";
 #endif
