@@ -90,6 +90,7 @@ namespace PointAwarder {
                 }
                 else
                 {
+                    TShock.Utils.Broadcast(args.Player.Name + " tried to award " + pointsToSend + " PedPoints to  " + awardedPlayer[0].Name + ".", 255, 69, 255);
                     Thread awardThread = new Thread(x => { awardPoints(args.Player, awardedPlayer[0], pointsToSend); });
                     awardThread.Start();
                 }
@@ -145,6 +146,7 @@ namespace PointAwarder {
                 }
                 else
                 {
+                    TShock.Utils.Broadcast(args.Player.Name + " tried to award " + pointsToSend + " PedPoints to the " + args.Parameters[0] + " team.", 255, 69, 255);
                     foreach(TSPlayer recipient in TShock.Players)
                     {
                         if(recipient != null && recipient.Active && recipient.Team == team)
