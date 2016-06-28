@@ -369,6 +369,8 @@ namespace PointAwarder {
                                     break;
                                 case 1: args.Player.SendMessage("You do not have permission to promote users.", 255, 0, 0);
                                     break;
+                                case 2: args.Player.SendMessage("Something went wron when Pedguin's server tried to promote " + awardedPlayer[0].Name + ", this could have happened because they are already host or admin", 255, 0, 0);
+                                    break;
                             }
                         } else {
                             args.Player.SendMessage("Something has gone wrong while trying to comunicate with Pedguin's server, please try again later.", 255, 0, 0);
