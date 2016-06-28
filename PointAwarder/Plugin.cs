@@ -69,7 +69,7 @@ namespace PointAwarder {
             {
                 args.Player.SendMessage("Invalid amount of points: not a number", 255, 0, 0);
             }
-            else if(pointsToSend > 100)
+            else if(pointsToSend > 100 * TShock.Utils.ActivePlayers())
             {             //change if max amount of points changes
                 args.Player.SendMessage("You can't award so many points!", 255, 0, 0);
             }
@@ -108,7 +108,7 @@ namespace PointAwarder {
             {
                 args.Player.SendMessage("Invalid amount of points: not a number", 255, 0, 0);
             }
-            else if(pointsToSend > 20)
+            else if(pointsToSend > 100 * TShock.Utils.ActivePlayers())
             {             //change if max amount of points changes
                 args.Player.SendMessage("You can't award so many points!", 255, 0, 0);
             }
