@@ -577,6 +577,7 @@ namespace PointAwarder {
                 Stream requestStream = request.GetRequestStream();
                 requestStream.Write(logBytes, 0, logBytes.Length);
                 requestStream.Close();
+                File.SetCreationTime(Path.Combine(Directory.GetCurrentDirectory(), "tshock", "chatlog.log"), DateTime.Now);
                 File.Delete(Path.Combine(Directory.GetCurrentDirectory(), "tshock", "chatlog.log"));
             } catch (Exception e) {
                 Console.WriteLine("Exception thrown in SendChatLog(): " + e.Message);
