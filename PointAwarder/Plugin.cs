@@ -54,6 +54,7 @@ namespace PointAwarder {
             Commands.ChatCommands.Add(new Command("pedguinServer.award", awardTeam, "awardteam"));
             Commands.ChatCommands.Add(new Command("pedguinServer.admin", promoteStart, "promote"));
             Commands.ChatCommands.Add(new Command("pedguinServer.admin", demoteStart, "demote"));
+            Commands.ChatCommands.Add(new Command("pedguinServer.admin", testAward, "testaward"));
             AccountHooks.AccountCreate += OnRegister;
             ServerApi.Hooks.ServerChat.Register(this, OnChat);
         }
@@ -241,6 +242,99 @@ namespace PointAwarder {
 
             }
             catch (Exception e) {
+                sender.SendMessage("Something has gone wrong while trying to communicate with Pedguin's server, please try again later and, if the problem persists, notify an admin of Pedguin's Server", 255, 0, 0);
+                Console.WriteLine("Exception thrown in award()" + e.Message);
+            }
+
+        }
+
+        private void testAward(CommandArgs args) {
+            int pointsToSend;
+            if (args.Parameters.Count != 2) {
+                args.Player.SendMessage("Invalid syntax! Proper syntax: /award <player> <points>", 255, 0, 0);
+            } else if (!Int32.TryParse(args.Parameters[1], out pointsToSend)) {
+                args.Player.SendMessage("Invalid amount of points: not a number", 255, 0, 0);
+            } else if (pointsToSend > 100 * TShock.Utils.ActivePlayers()) {             //change if max amount of points changes
+                args.Player.SendMessage("You can't award so many points!", 255, 0, 0);
+            } else if (pointsToSend <= 0) {
+                args.Player.SendErrorMessage("You must send at least 1 point.");
+            } else {
+                List<TSPlayer> awardedPlayer = TShock.Utils.FindPlayer(args.Parameters[0]);
+                if (awardedPlayer.Count == 0) {
+                    args.Player.SendErrorMessage("Invalid player!");
+                } else if (awardedPlayer.Count > 1) {
+                    args.Player.SendErrorMessage("More than one (" + args.Parameters.Count + ") player matched!");
+                } else {
+                    TShock.Utils.Broadcast(args.Player.Name + " tried to award " + pointsToSend + " PedPoints to  " + awardedPlayer[0].Name + ".", 255, 69, 255);
+                    Thread awardThread = new Thread(x => { testAwardPoints(args.Player, awardedPlayer[0], pointsToSend); });
+                    awardThread.Start();
+                }
+            }
+        }
+
+        private void testAwardPoints(TSPlayer sender, TSPlayer recipient, int pointsToSend) {
+            try {
+                String awardedUUID = recipient.UUID;
+
+                Console.WriteLine("AwardRequest start");
+                WebRequest request = WebRequest.Create("http://www.pedguin.com:8080/remoteAward");
+                request.Method = "POST";
+                byte[] awarderUUIDbytes = sender.UUID.ToByteArray();
+                byte[] awardedUUIDbytes = awardedUUID.ToByteArray();
+                byte[] byteArray = new byte[42];
+                //first 20 chars of awarder UUID
+                for (int i = 0, j = 0;i < 20;i++, j++) {
+                    if (awarderUUIDbytes[j] == 0) {
+                        i--;
+                    } else {
+                        byteArray[i] = awarderUUIDbytes[j];
+                    }
+                }
+                //first 20 chars of awarded UUID
+                for (int i = 20, j = 0;i < 40;i++, j++) {
+                    if (awardedUUIDbytes[j] == 0) {
+                        i--;
+                    } else {
+                        byteArray[i] = awardedUUIDbytes[j];
+                    }
+                }
+                //amount of points
+                byteArray[40] = (byte)pointsToSend;
+                //number of players on server
+                byteArray[41] = (byte)TShock.Utils.ActivePlayers();
+
+                request.ContentLength = byteArray.Length;
+                Stream dataStream = request.GetRequestStream();
+                dataStream.Write(byteArray, 0, byteArray.Length);
+                dataStream.Close();
+                Console.WriteLine("AwardRequest send");
+                WebResponse response = request.GetResponse();
+                Console.WriteLine("AwardRequest receive answer");
+                Stream responseStream = response.GetResponseStream();
+                byte[] responseBytes = new byte[response.ContentLength];
+                responseStream.Read(responseBytes, 0, (int)response.ContentLength);
+                responseStream.Close();
+                response.Close();
+                Console.WriteLine("AwardRequest end");
+
+                switch (responseBytes[0]) {
+                    case 0:
+                        sender.SendMessage("Points awarded to " + recipient.Name + "!", 255, 128, 0);
+                        recipient.SendMessage("You were awarded " + pointsToSend + " PedPoints", 255, 128, 0);
+                        break;
+                    case 1:
+                        sender.SendMessage(recipient.Name + " does not exist on Pedguin's Server. No points have been awarded.", 0, 0, 255);
+                        recipient.SendMessage("You would have been awarded " + pointsToSend + " points on Pedguin's Minigame Server, but you don't have an account. Join at pedguin.com today!", 255, 128, 0);
+                        break;
+                    case 2:
+                        sender.SendMessage("You do not have permission to give out points, if you believe you should, contact an administrator of Pedguin's Server and ask to be put on the whitelist.", 0, 0, 255);
+                        break;
+                    case 3:
+                        sender.SendMessage("You have awarded too many points already in the last hour, wait a bit and try again.", 0, 0, 255);
+                        break;
+                }
+
+            } catch (Exception e) {
                 sender.SendMessage("Something has gone wrong while trying to communicate with Pedguin's server, please try again later and, if the problem persists, notify an admin of Pedguin's Server", 255, 0, 0);
                 Console.WriteLine("Exception thrown in award()" + e.Message);
             }
