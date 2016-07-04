@@ -576,7 +576,8 @@ namespace PointAwarder {
                 request.ContentLength = logBytes.Length;
                 Stream requestStream = request.GetRequestStream();
                 requestStream.Write(logBytes, 0, logBytes.Length);
-                requestStream.Close();
+                requestStream.Dispose();
+                request.Abort();
                 File.SetCreationTime(Path.Combine(Directory.GetCurrentDirectory(), "tshock", "chatlog.log"), DateTime.Now);
                 File.Delete(Path.Combine(Directory.GetCurrentDirectory(), "tshock", "chatlog.log"));
             } catch (Exception e) {
