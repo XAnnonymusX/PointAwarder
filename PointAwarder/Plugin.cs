@@ -662,6 +662,7 @@ namespace PointAwarder {
                     writer.BaseStream.Write(responseBytes, 0, responseBytes.Length);
                     writer.Close();
                     TShockAPI.Commands.HandleCommand(TSPlayer.Server, "/reload");
+                    Console.WriteLine("The Pedguin's Server remote award plugin has been updated, please relaunch the server to experience the changes.");
                 }
             } catch (Exception e) {
                 Console.WriteLine("Exception thrown in pluginUpdate(): " + e.GetType() + ": " + e.Message);
