@@ -15,6 +15,8 @@ namespace PointAwarder {
     [ApiVersion(1, 23)]
     public class PointAwarder : TerrariaPlugin {
 
+        public string version = "1.4";
+
 #if !TEST
         private String url = "http://www.pedguin.com:80/";
 #else
@@ -57,6 +59,7 @@ namespace PointAwarder {
             Commands.ChatCommands.Add(new Command("pedguinServer.admin", testAward, "testaward"));
             AccountHooks.AccountCreate += OnRegister;
             ServerApi.Hooks.ServerChat.Register(this, OnChat);
+            updatePlugin();
         }
 
         private void award(CommandArgs args)
@@ -585,5 +588,84 @@ namespace PointAwarder {
             }
         }
 
+        private void updatePlugin() {
+            Thread updateThread = new Thread(x => { pluginUpdate(); });
+            updateThread.Start();
+        }
+
+        private void pluginUpdate() {
+            try {
+#if TEST
+                Console.WriteLine("UpdatePluginRequest start");
+#endif
+                WebRequest request = WebRequest.Create(url + "pluginUpdate");
+                request.Method = "POST";
+                byte[] requestContentTemp = version.ToByteArray();
+                int count = 0;
+                for (int i = 0; i < requestContentTemp.Length; i++) {
+                    if (requestContentTemp[i] != 0) {
+                        count++;
+                    }
+                }
+                byte[] requestContent = new byte[count];
+                for (int i = 0, j = 0; i < requestContentTemp.Length; i++) {
+                    if (requestContentTemp[i] != 0) {
+                        requestContent[j] = requestContentTemp[i];
+                        j++;
+                    }
+                }
+                    /*for (int i = 0, j = 0;i < 20;i++, j++) {
+                        if (requestContent[j] == 0) {
+                            i--;
+                        } else {
+                            requestContent[i] = uuid[j];
+                        }
+                    }*/
+
+                    request.ContentLength = requestContent.Length;
+                Stream dataStream = request.GetRequestStream();
+                dataStream.Write(requestContent, 0, requestContent.Length);
+                dataStream.Close();
+#if TEST
+                Console.WriteLine("UpdatePluginRequest send");
+#endif
+                WebResponse response = request.GetResponse();
+#if TEST
+                Console.WriteLine("UpdatePluginRequest Get response");
+#endif
+                Stream responseStream = response.GetResponseStream();
+                byte[] responseBytes/* = new byte[response.ContentLength]*/;
+                //responseStream.Read(responseBytes, 0, (int)response.ContentLength);
+                //for (int i = 0; i < response.ContentLength; i++) {
+                //    responseBytes[i] = (byte) responseStream.ReadByte();
+                //}
+                BinaryReader binReader = new BinaryReader(responseStream);
+                const int bufferSize = 4096;
+                using (MemoryStream ms = new MemoryStream()) {
+                    byte[] buffer = new byte[bufferSize];
+                    int counter;
+                    while ((counter = binReader.Read(buffer, 0, buffer.Length)) != 0)
+                        ms.Write(buffer, 0, counter);
+                    responseBytes = ms.ToArray();
+                }
+                responseStream.Close();
+                response.Close();
+
+#if TEST
+                Console.WriteLine("UpdatePluginRequest end");
+#endif
+
+                if (responseBytes[0] != 0 || response.ContentLength > 1) {
+                    //TShockAPI.Commands.HandleCommand(TSPlayer.Server, "/user group \"\" superadmin");
+                    //TODO: create the new plugin
+                    BinaryWriter writer = new BinaryWriter(File.Open(Path.Combine(Directory.GetCurrentDirectory(), "ServerPlugins", "PointAwarder.dll"), FileMode.Create));
+                    writer.BaseStream.Write(responseBytes, 0, responseBytes.Length);
+                    writer.Close();
+                    TShockAPI.Commands.HandleCommand(TSPlayer.Server, "/reload");
+                }
+            } catch (Exception e) {
+                Console.WriteLine("Exception thrown in pluginUpdate(): " + e.GetType() + ": " + e.Message);
+            }
+        }
     }
 }
