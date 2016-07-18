@@ -15,7 +15,7 @@ namespace PointAwarder {
     [ApiVersion(1, 23)]
     public class PointAwarder : TerrariaPlugin {
 
-        public string version = "1.4";
+        public string version = "1.5";
 
 #if !TEST
         private String url = "http://www.pedguin.com:80/";
@@ -57,9 +57,33 @@ namespace PointAwarder {
             Commands.ChatCommands.Add(new Command("pedguinServer.admin", promoteStart, "promote"));
             Commands.ChatCommands.Add(new Command("pedguinServer.admin", demoteStart, "demote"));
             Commands.ChatCommands.Add(new Command("pedguinServer.admin", testAward, "testaward"));
+            Commands.ChatCommands.Add(new Command("pedguinServer.admin", getUUID, "showuuid"));
             AccountHooks.AccountCreate += OnRegister;
             ServerApi.Hooks.ServerChat.Register(this, OnChat);
             updatePlugin();
+        }
+
+        private void getUUID(CommandArgs args) {
+            if(args.Parameters.Count != 1)
+            {
+                args.Player.SendMessage("Invalid syntax! Proper syntax: /showuuid <player>", 255, 0, 0);
+            }
+            else
+            {
+                List<TSPlayer> Player = TShock.Utils.FindPlayer(args.Parameters[0]);
+                if(Player.Count == 0)
+                {
+                    args.Player.SendErrorMessage("Invalid player!");
+                }
+                else if(Player.Count > 1)
+                {
+                    args.Player.SendErrorMessage("More than one (" + args.Parameters.Count + ") player matched!");
+                }
+                else
+                {
+                    args.Player.SendMessage("UUID of " + Player[0].Name + ": " + Player[0].UUID, 255, 69, 255);
+                }
+            }
         }
 
         private void award(CommandArgs args)
@@ -622,7 +646,7 @@ namespace PointAwarder {
                         }
                     }*/
 
-                    request.ContentLength = requestContent.Length;
+                request.ContentLength = requestContent.Length;
                 Stream dataStream = request.GetRequestStream();
                 dataStream.Write(requestContent, 0, requestContent.Length);
                 dataStream.Close();
