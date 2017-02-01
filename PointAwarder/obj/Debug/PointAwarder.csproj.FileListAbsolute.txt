@@ -10,3 +10,14 @@ C:\Users\Zak\Google Drive\TShock Mods\PointAwarder\PointAwarder\obj\Debug\PointA
 C:\Users\Zak\Google Drive\TShock Mods\PointAwarder\PointAwarder\obj\Debug\PointAwarder.dll
 C:\Users\Zak\Google Drive\TShock Mods\PointAwarder\PointAwarder\obj\Debug\PointAwarder.pdb
 C:\Users\Annonymus\Desktop\TERRARIA\remotePointAwarder\PointAwarder\PointAwarder\obj\Debug\PointAwarder.csprojResolveAssemblyReference.cache
+C:\Users\Annonymus\Desktop\TERRARIA\remotePointAwarder\PointAwarder\PointAwarder\bin\Debug\OTAPI.dll
+C:\Users\Annonymus\Desktop\TERRARIA\remotePointAwarder\PointAwarder\PointAwarder\bin\Debug\HttpServer.dll
+C:\Users\Annonymus\Desktop\TERRARIA\remotePointAwarder\PointAwarder\PointAwarder\bin\Debug\MySql.Data.dll
+C:\Users\Annonymus\Desktop\TERRARIA\remotePointAwarder\PointAwarder\PointAwarder\bin\Debug\BCrypt.Net.dll
+C:\Users\Annonymus\Desktop\TERRARIA\remotePointAwarder\PointAwarder\PointAwarder\bin\Debug\PedguinServer.dll
+C:\Users\Annonymus\Desktop\TERRARIA\remotePointAwarder\PointAwarder\PointAwarder\bin\Debug\Mono.Data.Sqlite.dll
+C:\Users\Annonymus\Desktop\TERRARIA\remotePointAwarder\PointAwarder\PointAwarder\bin\Debug\SharedConstants.dll
+C:\Users\Annonymus\Desktop\TERRARIA\remotePointAwarder\PointAwarder\PointAwarder\bin\Debug\TShockAPI.pdb
+C:\Users\Annonymus\Desktop\TERRARIA\remotePointAwarder\PointAwarder\PointAwarder\bin\Debug\TShockAPI.xml
+C:\Users\Annonymus\Desktop\TERRARIA\remotePointAwarder\PointAwarder\PointAwarder\bin\Debug\PedguinServer.pdb
+C:\Users\Annonymus\Desktop\TERRARIA\remotePointAwarder\PointAwarder\PointAwarder\bin\Debug\SharedConstants.pdb

@@ -12,7 +12,7 @@ using TShockAPI.Hooks;
 
 
 namespace PointAwarder {
-    [ApiVersion(1, 23)]
+    [ApiVersion(2, 0)]
     public class PointAwarder : TerrariaPlugin {
 
         public string version = "1.5";
