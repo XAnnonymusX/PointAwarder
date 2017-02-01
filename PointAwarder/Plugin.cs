@@ -15,7 +15,7 @@ namespace PointAwarder {
     [ApiVersion(2, 0)]
     public class PointAwarder : TerrariaPlugin {
 
-        public string version = "1.5";
+        public string version = "1.6";
 
 #if !TEST
         private String url = "http://www.pedguin.com:80/";
